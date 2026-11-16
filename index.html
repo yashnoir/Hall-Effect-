@@ -1,0 +1,1809 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hall Effect Material Classifier & Lab Assistant</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            cyber: {
+              950: '#070b14',
+              900: '#0b1120',
+              850: '#0f172a',
+              800: '#1e293b',
+              700: '#334155',
+              cyan: '#06b6d4',
+              cyanGlow: '#22d3ee',
+              indigo: '#6366f1',
+              emerald: '#10b981',
+              amber: '#f59e0b',
+              rose: '#f43f5e'
+            }
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'glow-cyan': 'glowCyan 2s ease-in-out infinite alternate',
+            'glow-emerald': 'glowEmerald 2s ease-in-out infinite alternate',
+            'scan-line': 'scanLine 2.2s linear infinite',
+          },
+          keyframes: {
+            glowCyan: {
+              '0%': { boxShadow: '0 0 15px -3px rgba(6, 182, 212, 0.25)' },
+              '100%': { boxShadow: '0 0 30px 4px rgba(6, 182, 212, 0.55)' }
+            },
+            glowEmerald: {
+              '0%': { boxShadow: '0 0 15px -3px rgba(16, 185, 129, 0.25)' },
+              '100%': { boxShadow: '0 0 30px 4px rgba(16, 185, 129, 0.55)' }
+            },
+            scanLine: {
+              '0%': { transform: 'translateY(-100%)' },
+              '100%': { transform: 'translateY(1000%)' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #06b6d4;
+    }
+
+    /* Grid background patterns */
+    .bg-grid-cyber {
+      background-size: 32px 32px;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    }
+    .light .bg-grid-cyber {
+      background-image: 
+        linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+    }
+
+    /* Glassmorphic Cards */
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .light .glass-panel {
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+    }
+
+    /* Laser scan effect */
+    .scan-beam {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, #22d3ee, #6366f1, transparent);
+      box-shadow: 0 0 15px #22d3ee;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 40;
+    }
+    .scanning .scan-beam {
+      opacity: 1;
+      animation: laserSweep 1.1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+    @keyframes laserSweep {
+      0% { top: 0%; opacity: 0.2; }
+      50% { opacity: 1; }
+      100% { top: 100%; opacity: 0.2; }
+    }
+
+    /* Micro-interactions */
+    .btn-cyber {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-cyber:active {
+      transform: scale(0.97);
+    }
+    .btn-cyber:hover {
+      box-shadow: 0 0 20px -2px rgba(6, 182, 212, 0.45);
+    }
+
+    /* Number ticker animation effect */
+    .metric-value {
+      transition: color 0.3s ease;
+    }
+  </style>
+</head>
+<body class="bg-cyber-950 text-slate-100 min-h-screen font-sans bg-grid-cyber antialiased selection:bg-cyan-500/30 selection:text-cyan-200 transition-colors duration-300">
+
+  <!-- Ambient Light Orbs -->
+  <div class="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+    <div class="absolute -top-40 -left-40 w-96 h-96 bg-cyan-600/15 rounded-full blur-3xl"></div>
+    <div class="absolute top-1/3 -right-40 w-96 h-96 bg-indigo-600/15 rounded-full blur-3xl"></div>
+    <div class="absolute -bottom-40 left-1/3 w-96 h-96 bg-emerald-600/10 rounded-full blur-3xl"></div>
+  </div>
+
+  <!-- Main Container -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- Top Navigation & Lab Status Bar -->
+    <header class="glass-panel rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row items-center justify-between gap-4 border border-slate-700/50">
+      <div class="flex items-center gap-4 w-full md:w-auto">
+        <div class="relative flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-indigo-600 shadow-lg shadow-cyan-500/20 text-white font-mono text-xl font-bold">
+          <i class="fa-solid fa-atom animate-spin" style="animation-duration: 12s;"></i>
+          <span class="absolute -top-1 -right-1 flex h-3 w-3">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
+          </span>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent dark:from-white dark:to-cyan-400 light:text-slate-900">
+              HALL EFFECT CLASSIFIER
+            </h1>
+            <span class="px-2 py-0.5 text-[10px] font-mono font-semibold tracking-wider uppercase rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+              v2.4 PRO
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 font-medium">
+            Cyber-Academic Precision Lab Assistant & Material Characterization Engine
+          </p>
+        </div>
+      </div>
+
+      <!-- Live HUD Telemetry & Quick Action Controls -->
+      <div class="flex items-center flex-wrap justify-between md:justify-end gap-3 w-full md:w-auto text-xs font-mono">
+        <!-- Status indicator -->
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-slate-300">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="hidden sm:inline">LAB STATE:</span>
+          <span class="text-emerald-400 font-bold" id="labStateText">SI NORMALIZED</span>
+        </div>
+
+        <!-- Audio Synthesizer Toggle -->
+        <button id="soundToggleBtn" onclick="toggleAudio()" title="Toggle Laboratory Synthesized Sound FX" class="btn-cyber px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-slate-300 flex items-center gap-2">
+          <i id="soundIcon" class="fa-solid fa-volume-high text-cyan-400"></i>
+          <span class="hidden sm:inline" id="soundLabel">AUDIO ON</span>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button id="themeToggleBtn" onclick="toggleTheme()" title="Switch Light/Dark Theme" class="btn-cyber px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-slate-300 flex items-center gap-2">
+          <i id="themeIcon" class="fa-solid fa-moon text-indigo-400"></i>
+          <span class="hidden sm:inline" id="themeLabel">DARK</span>
+        </button>
+
+        <!-- Help / Theory Modal Trigger -->
+        <button onclick="openTheoryModal()" class="btn-cyber px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-indigo-600 text-white font-semibold flex items-center gap-2 shadow-md shadow-cyan-600/20">
+          <i class="fa-solid fa-book-open"></i>
+          <span>THEORY & GUIDE</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Preset Selection Strip -->
+    <div class="glass-panel rounded-xl p-3 sm:p-4 border border-slate-700/50 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="flex items-center gap-2 text-xs font-semibold text-slate-300 whitespace-nowrap">
+        <i class="fa-solid fa-flask-vial text-cyan-400"></i>
+        <span>LAB BENCHMARK PRESETS:</span>
+      </div>
+      <div class="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none">
+        <button onclick="loadPreset('n-ge')" class="btn-cyber px-2.5 py-1 text-xs rounded-md bg-slate-800/80 hover:bg-cyan-950/60 border border-slate-700 hover:border-cyan-500/50 text-slate-300 hover:text-cyan-300 transition-all whitespace-nowrap">
+          <span class="inline-block w-1.5 h-1.5 rounded-full bg-cyan-400 mr-1.5"></span>n-Germanium (Standard)
+        </button>
+        <button onclick="loadPreset('p-si')" class="btn-cyber px-2.5 py-1 text-xs rounded-md bg-slate-800/80 hover:bg-emerald-950/60 border border-slate-700 hover:border-emerald-500/50 text-slate-300 hover:text-emerald-300 transition-all whitespace-nowrap">
+          <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5"></span>p-Silicon (Doped)
+        </button>
+        <button onclick="loadPreset('n-gaas')" class="btn-cyber px-2.5 py-1 text-xs rounded-md bg-slate-800/80 hover:bg-indigo-950/60 border border-slate-700 hover:border-indigo-500/50 text-slate-300 hover:text-indigo-300 transition-all whitespace-nowrap">
+          <span class="inline-block w-1.5 h-1.5 rounded-full bg-indigo-400 mr-1.5"></span>GaAs 2DEG Probe
+        </button>
+        <button onclick="loadPreset('cu-film')" class="btn-cyber px-2.5 py-1 text-xs rounded-md bg-slate-800/80 hover:bg-amber-950/60 border border-slate-700 hover:border-amber-500/50 text-slate-300 hover:text-amber-300 transition-all whitespace-nowrap">
+          <span class="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 mr-1.5"></span>Copper Thin Metal
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Grid: Lab Input Engine (Left) & Real-time Visualizer / Results (Right) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+      <!-- LEFT COLUMN: Input Matrix & Unit Conversion Engine (5 cols) -->
+      <section class="lg:col-span-5 space-y-5">
+        <div class="glass-panel relative rounded-2xl p-5 sm:p-6 border border-slate-700/60 shadow-xl overflow-hidden" id="inputContainer">
+          
+          <!-- Scan beam line -->
+          <div class="scan-beam" id="scanBeam"></div>
+
+          <div class="flex items-center justify-between pb-4 border-b border-slate-700/60 mb-5">
+            <div class="flex items-center gap-2.5">
+              <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+                <i class="fa-solid fa-sliders text-xs"></i>
+              </span>
+              <div>
+                <h2 class="text-base font-bold text-white tracking-wide">EXPERIMENTAL PARAMETERS</h2>
+                <p class="text-[11px] text-slate-400 font-mono">Continuous Unit Normalization Active</p>
+              </div>
+            </div>
+            <button onclick="resetInputs()" title="Reset All Fields" class="text-xs text-slate-400 hover:text-rose-400 font-mono transition-colors flex items-center gap-1">
+              <i class="fa-solid fa-rotate-left"></i>
+              <span class="hidden sm:inline">RESET</span>
+            </button>
+          </div>
+
+          <!-- Input Fields Form -->
+          <form id="hallForm" onsubmit="event.preventDefault(); performCalculation();" class="space-y-4">
+            
+            <!-- Parameter 1: Hall Voltage (V_H) -->
+            <div class="group relative">
+              <div class="flex justify-between items-center mb-1.5">
+                <label for="voltageInput" class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                  <span>Hall Voltage (<span class="font-mono text-cyan-300">V<sub>H</sub></span>)</span>
+                  <i class="fa-solid fa-circle-info text-[10px] text-slate-400 cursor-pointer" title="Transverse voltage induced across the sample. Sign determines carrier polarity."></i>
+                </label>
+                <span class="text-[11px] font-mono text-slate-400" id="normVoltagePreview">SI: 0.000 V</span>
+              </div>
+              <div class="flex rounded-xl overflow-hidden bg-slate-900/90 border border-slate-700 focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-500/20 transition-all">
+                <input 
+                  type="number" 
+                  step="any" 
+                  id="voltageInput" 
+                  placeholder="-45.0" 
+                  value="-45.0"
+                  oninput="updateNormPreview('voltage')" 
+                  class="w-full bg-transparent px-3.5 py-2.5 text-sm font-mono text-white placeholder-slate-500 focus:outline-none"
+                  required
+                >
+                <select 
+                  id="voltageUnit" 
+                  onchange="updateNormPreview('voltage')"
+                  class="bg-slate-800 text-xs font-mono font-medium text-cyan-400 px-3 py-2.5 border-l border-slate-700 focus:outline-none cursor-pointer hover:bg-slate-700/80 transition-colors"
+                >
+                  <option value="1">Volts (V)</option>
+                  <option value="1e-3" selected>Millivolts (mV)</option>
+                  <option value="1e-6">Microvolts (µV)</option>
+                </select>
+              </div>
+              <p class="text-[10px] text-slate-400 mt-1 font-mono flex items-center gap-1">
+                <span class="text-cyan-400 font-bold">*Note:</span> Negative indicates electrons ($e^-$), positive indicates holes ($h^+$).
+              </p>
+            </div>
+
+            <!-- Parameter 2: Probe Current (I) -->
+            <div class="group relative">
+              <div class="flex justify-between items-center mb-1.5">
+                <label for="currentInput" class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+                  <span>Current (<span class="font-mono text-indigo-300">I</span>)</span>
+                  <i class="fa-solid fa-circle-info text-[10px] text-slate-400 cursor-pointer" title="Longitudinal current passing lengthwise through the semiconductor bar."></i>
+                </label>
+                <span class="text-[11px] font-mono text-slate-400" id="normCurrentPreview">SI: 0.010 A</span>
+              </div>
+              <div class="flex rounded-xl overflow-hidden bg-slate-900/90 border border-slate-700 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all">
+                <input 
+                  type="number" 
+                  step="any" 
+                  id="currentInput" 
+                  placeholder="10.0" 
+                  value="10.0"
+                  oninput="updateNormPreview('current')" 
+                  class="w-full bg-transparent px-3.5 py-2.5 text-sm font-mono text-white placeholder-slate-500 focus:outline-none"
+                  required
+                >
+                <select 
+                  id="currentUnit" 
+                  onchange="updateNormPreview('current')"
+                  class="bg-slate-800 text-xs font-mono font-medium text-indigo-400 px-3 py-2.5 border-l border-slate-700 focus:outline-none cursor-pointer hover:bg-slate-700/80 transition-colors"
+                >
+                  <option value="1">Amperes (A)</option>
+                  <option value="1e-3" selected>Milliamperes (mA)</option>
+                  <option value="1e-6">Microamperes (µA)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Parameter 3: Magnetic Flux Density (B) -->
+            <div class="group relative">
+              <div class="flex justify-between items-center mb-1.5">
+                <label for="magneticInput" class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                  <span>Magnetic Field (<span class="font-mono text-emerald-300">B</span>)</span>
+                  <i class="fa-solid fa-circle-info text-[10px] text-slate-400 cursor-pointer" title="Perpendicular magnetic field applied through the thickness of the sample."></i>
+                </label>
+                <span class="text-[11px] font-mono text-slate-400" id="normMagneticPreview">SI: 0.500 T</span>
+              </div>
+              <div class="flex rounded-xl overflow-hidden bg-slate-900/90 border border-slate-700 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all">
+                <input 
+                  type="number" 
+                  step="any" 
+                  id="magneticInput" 
+                  placeholder="0.5" 
+                  value="0.5"
+                  oninput="updateNormPreview('magnetic')" 
+                  class="w-full bg-transparent px-3.5 py-2.5 text-sm font-mono text-white placeholder-slate-500 focus:outline-none"
+                  required
+                >
+                <select 
+                  id="magneticUnit" 
+                  onchange="updateNormPreview('magnetic')"
+                  class="bg-slate-800 text-xs font-mono font-medium text-emerald-400 px-3 py-2.5 border-l border-slate-700 focus:outline-none cursor-pointer hover:bg-slate-700/80 transition-colors"
+                >
+                  <option value="1" selected>Tesla (T)</option>
+                  <option value="1e-4">Gauss (G)</option>
+                  <option value="1e-3">Millitesla (mT)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Parameter 4: Sample Thickness (w) -->
+            <div class="group relative">
+              <div class="flex justify-between items-center mb-1.5">
+                <label for="thicknessInput" class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                  <span>Sample Thickness (<span class="font-mono text-amber-300">w</span> / <span class="font-mono text-amber-300">t</span>)</span>
+                  <i class="fa-solid fa-circle-info text-[10px] text-slate-400 cursor-pointer" title="Dimension along the magnetic field vector. Must be greater than 0."></i>
+                </label>
+                <span class="text-[11px] font-mono text-slate-400" id="normThicknessPreview">SI: 5.000e-4 m</span>
+              </div>
+              <div class="flex rounded-xl overflow-hidden bg-slate-900/90 border border-slate-700 focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-500/20 transition-all">
+                <input 
+                  type="number" 
+                  step="any" 
+                  id="thicknessInput" 
+                  placeholder="0.5" 
+                  value="0.5"
+                  oninput="updateNormPreview('thickness')" 
+                  class="w-full bg-transparent px-3.5 py-2.5 text-sm font-mono text-white placeholder-slate-500 focus:outline-none"
+                  required
+                >
+                <select 
+                  id="thicknessUnit" 
+                  onchange="updateNormPreview('thickness')"
+                  class="bg-slate-800 text-xs font-mono font-medium text-amber-400 px-3 py-2.5 border-l border-slate-700 focus:outline-none cursor-pointer hover:bg-slate-700/80 transition-colors"
+                >
+                  <option value="1">Meters (m)</option>
+                  <option value="1e-2">Centimeters (cm)</option>
+                  <option value="1e-3" selected>Millimeters (mm)</option>
+                  <option value="1e-6">Microns (µm)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Action Button -->
+            <div class="pt-3">
+              <button 
+                type="submit" 
+                id="calculateBtn" 
+                class="btn-cyber w-full py-3.5 px-6 rounded-xl font-bold font-mono tracking-wider text-sm text-white bg-gradient-to-r from-cyan-500 via-indigo-600 to-cyan-500 bg-size-200 hover:bg-right transition-all duration-300 shadow-lg shadow-cyan-500/25 flex items-center justify-center gap-3"
+              >
+                <i class="fa-solid fa-bolt-lightning text-cyan-300 animate-pulse"></i>
+                <span id="btnText">EXECUTE HALL ANALYSIS</span>
+                <i class="fa-solid fa-microchip text-indigo-300"></i>
+              </button>
+            </div>
+          </form>
+
+          <!-- Fundamental Constant Badge Footer -->
+          <div class="mt-5 pt-4 border-t border-slate-800 flex items-center justify-between text-[11px] font-mono text-slate-400">
+            <span class="flex items-center gap-1.5">
+              <i class="fa-solid fa-shield-halved text-cyan-400"></i>
+              <span>CODATA 2018 SI CONSTANT</span>
+            </span>
+            <span class="text-cyan-300 font-semibold">e = 1.602176634 × 10⁻¹⁹ C</span>
+          </div>
+        </div>
+
+        <!-- Formula Guide Quick Card -->
+        <div class="glass-panel rounded-2xl p-4 sm:p-5 border border-slate-700/60 text-xs space-y-2.5">
+          <div class="flex items-center justify-between text-slate-300 font-semibold font-mono text-xs">
+            <span class="flex items-center gap-1.5">
+              <i class="fa-solid fa-square-root-variable text-indigo-400"></i>
+              <span>GOVERNING RELATIONS</span>
+            </span>
+            <span class="text-[10px] text-slate-400">ISOLATED CLIENT EVAL</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 font-mono text-[11px]">
+            <div class="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800">
+              <div class="text-slate-400 text-[10px]">Hall Coefficient:</div>
+              <div class="text-cyan-400 font-bold mt-0.5">R<sub>H</sub> = (V<sub>H</sub> · w) / (I · B)</div>
+            </div>
+            <div class="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800">
+              <div class="text-slate-400 text-[10px]">Carrier Density:</div>
+              <div class="text-emerald-400 font-bold mt-0.5">n = 1 / (|R<sub>H</sub>| · e)</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT COLUMN: Interactive 2.5D Hall Bar Visualizer & Results Suite (7 cols) -->
+      <section class="lg:col-span-7 space-y-5">
+        
+        <!-- Interactive 2.5D Canvas Chamber -->
+        <div class="glass-panel rounded-2xl p-5 border border-slate-700/60 shadow-xl relative overflow-hidden">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="flex h-6 w-6 items-center justify-center rounded-md bg-indigo-500/10 text-indigo-400 border border-indigo-500/30">
+                <i class="fa-solid fa-cube text-xs"></i>
+              </span>
+              <h3 class="text-xs sm:text-sm font-bold text-white tracking-wide font-mono">
+                LORENTZ DYNAMICS // LIVE 2.5D HALL PROBE CHAMBER
+              </h3>
+            </div>
+            <div class="flex items-center gap-2">
+              <span id="canvasCarrierBadge" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+                CARRIER: ELECTRONS (e⁻)
+              </span>
+              <button onclick="toggleCanvasMotion()" id="pauseCanvasBtn" class="text-slate-400 hover:text-white text-xs px-2 py-0.5 rounded bg-slate-800 border border-slate-700">
+                <i class="fa-solid fa-pause"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Canvas Simulation -->
+          <div class="relative w-full h-56 sm:h-64 rounded-xl overflow-hidden bg-slate-950/80 border border-slate-800/80 flex items-center justify-center">
+            <canvas id="hallCanvas" class="w-full h-full block cursor-crosshair"></canvas>
+            
+            <!-- Overlay Badges on Canvas -->
+            <div class="absolute top-2 left-2 flex flex-col gap-1 text-[10px] font-mono pointer-events-none">
+              <span class="bg-slate-900/80 backdrop-blur-sm px-2 py-0.5 rounded border border-slate-700 text-indigo-300">
+                Current Vector <b>J</b> &rarr;
+              </span>
+              <span class="bg-slate-900/80 backdrop-blur-sm px-2 py-0.5 rounded border border-slate-700 text-emerald-300">
+                Magnetic Field <b>B</b> &darr;
+              </span>
+            </div>
+            <div class="absolute bottom-2 right-2 text-[10px] font-mono pointer-events-none">
+              <span class="bg-slate-900/80 backdrop-blur-sm px-2 py-0.5 rounded border border-slate-700 text-cyan-300 flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
+                Lorentz Force: <b>F</b> = q(<b>v</b> &times; <b>B</b>)
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- MAIN RESULTS & CLASSIFICATION SUITE -->
+        <div id="resultsCard" class="glass-panel rounded-2xl p-5 sm:p-6 border border-slate-700/60 shadow-xl space-y-5 transition-all duration-300">
+          
+          <!-- Classification Banner Header -->
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-xl border transition-all duration-300" id="classificationBanner">
+            <div class="flex items-center gap-3.5 text-center sm:text-left">
+              <div id="carrierIconBox" class="w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold shadow-lg transition-all duration-300">
+                <i id="carrierTypeIcon" class="fa-solid fa-atom"></i>
+              </div>
+              <div>
+                <div class="text-[10px] font-mono font-bold tracking-widest text-slate-400 uppercase">
+                  CLASSIFICATION VERDICT
+                </div>
+                <div id="materialTypeTitle" class="text-lg sm:text-xl font-extrabold tracking-tight">
+                  Awaiting Calculation...
+                </div>
+              </div>
+            </div>
+            
+            <div class="text-center sm:text-right">
+              <div class="text-[10px] font-mono text-slate-400">MAJORITY CARRIERS</div>
+              <div id="majorityCarrierText" class="text-sm font-bold font-mono text-white">
+                --
+              </div>
+            </div>
+          </div>
+
+          <!-- Primary Metric Grid (Scientific & Practical Units) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            
+            <!-- Hall Coefficient Card -->
+            <div class="p-4 rounded-xl bg-slate-900/70 border border-slate-700/60 relative group hover:border-cyan-500/50 transition-all">
+              <div class="flex justify-between items-center mb-1">
+                <span class="text-xs font-semibold text-slate-400 font-mono">HALL COEFFICIENT (R<sub>H</sub>)</span>
+                <button onclick="copyToClipboard('rhValueSI', 'Hall Coefficient (SI)')" title="Copy to Clipboard" class="opacity-75 group-hover:opacity-100 text-slate-400 hover:text-cyan-400 text-xs transition-opacity">
+                  <i class="fa-regular fa-copy"></i>
+                </button>
+              </div>
+              <div class="text-xl sm:text-2xl font-extrabold font-mono text-cyan-400 tracking-tight" id="rhDisplay">
+                --
+              </div>
+              <div class="mt-1.5 flex flex-col gap-0.5 text-[11px] font-mono text-slate-400">
+                <span id="rhAltDisplay">CGS: -- cm³/C</span>
+                <span class="text-[10px] text-slate-400" id="rhSignExplanation">Polarity determines charge sign</span>
+              </div>
+            </div>
+
+            <!-- Carrier Density Card -->
+            <div class="p-4 rounded-xl bg-slate-900/70 border border-slate-700/60 relative group hover:border-emerald-500/50 transition-all">
+              <div class="flex justify-between items-center mb-1">
+                <span class="text-xs font-semibold text-slate-400 font-mono">CARRIER DENSITY (n / p)</span>
+                <button onclick="copyToClipboard('densityValueSI', 'Carrier Density (SI)')" title="Copy to Clipboard" class="opacity-75 group-hover:opacity-100 text-slate-400 hover:text-emerald-400 text-xs transition-opacity">
+                  <i class="fa-regular fa-copy"></i>
+                </button>
+              </div>
+              <div class="text-xl sm:text-2xl font-extrabold font-mono text-emerald-400 tracking-tight" id="densityDisplay">
+                --
+              </div>
+              <div class="mt-1.5 flex flex-col gap-0.5 text-[11px] font-mono text-slate-400">
+                <span id="densityCGSDisplay">Standard: -- cm⁻³</span>
+                <span class="text-[10px] text-slate-400">Normalized from n = 1 / (|R<sub>H</sub>| · e)</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Step-by-Step Mathematical Derivation Accordion -->
+          <div class="rounded-xl bg-slate-900/50 border border-slate-800 overflow-hidden">
+            <button onclick="toggleDerivation()" class="w-full px-4 py-3 text-xs font-mono font-semibold text-slate-300 flex items-center justify-between hover:bg-slate-800/50 transition-colors">
+              <span class="flex items-center gap-2">
+                <i class="fa-solid fa-code-compare text-indigo-400"></i>
+                <span>MATHEMATICAL AUDIT TRAIL // STEP-BY-STEP SUBSTITUTION</span>
+              </span>
+              <i id="derivationChevron" class="fa-solid fa-chevron-down text-slate-400 transition-transform duration-200"></i>
+            </button>
+            
+            <div id="derivationContent" class="hidden px-4 pb-4 pt-2 border-t border-slate-800/80 font-mono text-xs text-slate-300 space-y-3 bg-slate-950/40">
+              
+              <!-- Normalized Input Snapshot -->
+              <div class="text-[11px] text-slate-400 pb-2 border-b border-slate-800/60">
+                <b class="text-slate-300">1. Normalized SI State:</b>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1 text-slate-400">
+                  <div>V<sub>H</sub> = <span id="auditVH" class="text-cyan-300">--</span></div>
+                  <div>I = <span id="auditI" class="text-indigo-300">--</span></div>
+                  <div>B = <span id="auditB" class="text-emerald-300">--</span></div>
+                  <div>w = <span id="auditW" class="text-amber-300">--</span></div>
+                </div>
+              </div>
+
+              <!-- Step 1 Math -->
+              <div>
+                <span class="text-indigo-300 font-semibold">2. Hall Coefficient Substitution:</span>
+                <div class="mt-1 p-2 rounded bg-slate-900 border border-slate-800 text-[11px] text-slate-300 overflow-x-auto" id="auditFormula1">
+                  R<sub>H</sub> = (V<sub>H</sub> × w) / (I × B)
+                </div>
+              </div>
+
+              <!-- Step 2 Math -->
+              <div>
+                <span class="text-emerald-300 font-semibold">3. Carrier Density Calculation:</span>
+                <div class="mt-1 p-2 rounded bg-slate-900 border border-slate-800 text-[11px] text-slate-300 overflow-x-auto" id="auditFormula2">
+                  n = 1 / (|R<sub>H</sub>| × 1.602176634 × 10⁻¹⁹ C)
+                </div>
+              </div>
+
+              <!-- Decision Tree Rule Explanation -->
+              <div class="p-2.5 rounded bg-slate-900/80 border border-slate-800 text-[11px] text-slate-300" id="auditRuleExplanation">
+                Decision rule will appear upon evaluation.
+              </div>
+            </div>
+          </div>
+
+          <!-- Export & Action Bar -->
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+              <button onclick="exportLabReport('markdown')" class="btn-cyber flex-1 sm:flex-none px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono text-slate-300 hover:text-white flex items-center justify-center gap-2">
+                <i class="fa-brands fa-markdown text-cyan-400"></i>
+                <span>COPY MARKDOWN</span>
+              </button>
+              <button onclick="exportLabReport('latex')" class="btn-cyber flex-1 sm:flex-none px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono text-slate-300 hover:text-white flex items-center justify-center gap-2">
+                <i class="fa-solid fa-square-root-variable text-indigo-400"></i>
+                <span>COPY LATEX</span>
+              </button>
+            </div>
+            
+            <div class="text-[11px] font-mono text-slate-400 text-center sm:text-right">
+              Concurrent Lab Session ID: <span class="text-cyan-400" id="sessionId">#SIM-8902</span>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+    </div>
+
+    <!-- History / Experiment Runs Table -->
+    <div class="glass-panel rounded-2xl p-5 border border-slate-700/60 shadow-xl">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+        <div class="flex items-center gap-2.5">
+          <span class="flex h-6 w-6 items-center justify-center rounded-md bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+            <i class="fa-solid fa-clipboard-list text-xs"></i>
+          </span>
+          <h3 class="text-sm font-bold text-white font-mono tracking-wide">
+            LOCAL EXPERIMENTAL LOG // CONCURRENT RUNS
+          </h3>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="downloadCSVLog()" class="btn-cyber px-3 py-1 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-mono flex items-center gap-1.5">
+            <i class="fa-solid fa-file-csv text-emerald-400"></i>
+            <span>EXPORT CSV</span>
+          </button>
+          <button onclick="clearHistoryLog()" class="btn-cyber px-3 py-1 text-xs rounded-lg bg-slate-800 hover:bg-rose-950/60 border border-slate-700 text-slate-400 hover:text-rose-400 font-mono flex items-center gap-1.5">
+            <i class="fa-solid fa-trash-can"></i>
+            <span>CLEAR</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left font-mono text-xs text-slate-300 border-collapse">
+          <thead>
+            <tr class="border-b border-slate-800 text-[10px] uppercase text-slate-400">
+              <th class="py-2.5 px-3">Timestamp</th>
+              <th class="py-2.5 px-3">V<sub>H</sub> (Normalized)</th>
+              <th class="py-2.5 px-3">I (Normalized)</th>
+              <th class="py-2.5 px-3">B (Normalized)</th>
+              <th class="py-2.5 px-3">w (Normalized)</th>
+              <th class="py-2.5 px-3">Type</th>
+              <th class="py-2.5 px-3">R<sub>H</sub> (m³/C)</th>
+              <th class="py-2.5 px-3">Carrier Density (cm⁻³)</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody" class="divide-y divide-slate-800/60">
+            <tr class="text-slate-400 text-center py-4">
+              <td colspan="8" class="py-4">No experiment runs recorded yet. Execute a calculation to log telemetry.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FLOATING TOAST NOTIFICATION STACK -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none max-w-sm w-full"></div>
+
+  <!-- THEORY MODAL DIALOG -->
+  <div id="theoryModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden items-center justify-center p-4 transition-all duration-300">
+    <div class="glass-panel max-w-2xl w-full rounded-2xl border border-slate-700/80 p-6 shadow-2xl relative max-h-[85vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-700/70 mb-4">
+        <div class="flex items-center gap-2.5">
+          <i class="fa-solid fa-atom text-cyan-400 text-lg"></i>
+          <h3 class="text-lg font-bold font-mono text-white">THE HALL EFFECT // PHYSICS FOUNDATION</h3>
+        </div>
+        <button onclick="closeTheoryModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
+        <p>
+          Discovered in 1879 by Edwin H. Hall, the <b>Hall Effect</b> occurs when an electric current carries charges through a magnetic field perpendicular to the flow. The moving charge carriers experience a transverse <b>Lorentz force</b>:
+        </p>
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 font-mono text-center text-cyan-300">
+          <b>F</b><sub>L</sub> = q (<b>v</b><sub>d</sub> &times; <b>B</b>)
+        </div>
+        <p>
+          This transverse force deflects charge carriers to one face of the conductor or semiconductor until an opposing electric field (<b>Hall field</b> E<sub>H</sub>) builds up to balance the magnetic force. The resulting potential difference is the <b>Hall Voltage (V<sub>H</sub>)</b>.
+        </p>
+
+        <h4 class="font-bold font-mono text-white text-sm pt-2 text-cyan-400">Why the Sign of R<sub>H</sub> Classifies the Semiconductor:</h4>
+        <ul class="list-disc pl-5 space-y-1.5 text-xs text-slate-300">
+          <li>
+            <b class="text-cyan-400">N-Type Semiconductors (Electrons):</b> Negative charges (q = -e) moving in the opposite direction of conventional current are deflected to the same physical side as positive charges, producing a negative Hall voltage ($V_H < 0$) and a <b>negative Hall coefficient ($R_H < 0$)</b>.
+          </li>
+          <li>
+            <b class="text-emerald-400">P-Type Semiconductors (Holes):</b> Positive charge carriers (q = +e) moving in the direction of conventional current produce a positive Hall voltage ($V_H > 0$) and a <b>positive Hall coefficient ($R_H > 0$)</b>.
+          </li>
+          <li>
+            <b>Carrier Density:</b> Once $R_H$ is known, carrier concentration is determined via $n = \frac{1}{|R_H| \cdot e}$.
+          </li>
+        </ul>
+
+        <div class="pt-3 border-t border-slate-800 flex justify-end">
+          <button onclick="closeTheoryModal()" class="btn-cyber px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 font-mono text-white text-xs font-bold">
+            GOT IT // RETURN TO LAB
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT ENGINE -->
+  <script>
+    /**
+     * HALL EFFECT LAB ENGINE & CONCURRENT CLIENT SUITE
+     * Production Grade - Pure Client-side ES6+
+     */
+
+    // Fundamental Constants
+    const ELEMENTARY_CHARGE = 1.602176634e-19; // SI Coulombs
+
+    // Session State (Isolated to prevent any cross-instance or global pollution)
+    const LabSession = {
+      id: '#LAB-' + Math.floor(1000 + Math.random() * 9000),
+      soundEnabled: true,
+      audioCtx: null,
+      history: [],
+      currentResult: null,
+      isScanning: false,
+      isCanvasPaused: false,
+      canvasAnimId: null
+    };
+
+    // DOM Element Cache
+    const UI = {
+      voltageInput: document.getElementById('voltageInput'),
+      voltageUnit: document.getElementById('voltageUnit'),
+      normVoltagePreview: document.getElementById('normVoltagePreview'),
+
+      currentInput: document.getElementById('currentInput'),
+      currentUnit: document.getElementById('currentUnit'),
+      normCurrentPreview: document.getElementById('normCurrentPreview'),
+
+      magneticInput: document.getElementById('magneticInput'),
+      magneticUnit: document.getElementById('magneticUnit'),
+      normMagneticPreview: document.getElementById('normMagneticPreview'),
+
+      thicknessInput: document.getElementById('thicknessInput'),
+      thicknessUnit: document.getElementById('thicknessUnit'),
+      normThicknessPreview: document.getElementById('normThicknessPreview'),
+
+      scanBeam: document.getElementById('scanBeam'),
+      inputContainer: document.getElementById('inputContainer'),
+      calculateBtn: document.getElementById('calculateBtn'),
+      btnText: document.getElementById('btnText'),
+
+      // Results
+      classificationBanner: document.getElementById('classificationBanner'),
+      carrierIconBox: document.getElementById('carrierIconBox'),
+      carrierTypeIcon: document.getElementById('carrierTypeIcon'),
+      materialTypeTitle: document.getElementById('materialTypeTitle'),
+      majorityCarrierText: document.getElementById('majorityCarrierText'),
+      rhDisplay: document.getElementById('rhDisplay'),
+      rhAltDisplay: document.getElementById('rhAltDisplay'),
+      rhSignExplanation: document.getElementById('rhSignExplanation'),
+      densityDisplay: document.getElementById('densityDisplay'),
+      densityCGSDisplay: document.getElementById('densityCGSDisplay'),
+
+      // Audit Trail
+      auditVH: document.getElementById('auditVH'),
+      auditI: document.getElementById('auditI'),
+      auditB: document.getElementById('auditB'),
+      auditW: document.getElementById('auditW'),
+      auditFormula1: document.getElementById('auditFormula1'),
+      auditFormula2: document.getElementById('auditFormula2'),
+      auditRuleExplanation: document.getElementById('auditRuleExplanation'),
+      derivationContent: document.getElementById('derivationContent'),
+      derivationChevron: document.getElementById('derivationChevron'),
+
+      // Canvas
+      hallCanvas: document.getElementById('hallCanvas'),
+      canvasCarrierBadge: document.getElementById('canvasCarrierBadge'),
+      pauseCanvasBtn: document.getElementById('pauseCanvasBtn'),
+
+      // History
+      historyTableBody: document.getElementById('historyTableBody'),
+      sessionId: document.getElementById('sessionId')
+    };
+
+    // Preset Data Library
+    const PRESETS = {
+      'n-ge': {
+        name: 'n-Germanium (Standard)',
+        vh: -45.0,
+        vhUnit: 1e-3, // mV
+        i: 10.0,
+        iUnit: 1e-3, // mA
+        b: 0.5,
+        bUnit: 1, // T
+        w: 0.5,
+        wUnit: 1e-3 // mm
+      },
+      'p-si': {
+        name: 'p-Silicon (Doped)',
+        vh: 14.2,
+        vhUnit: 1e-3, // mV
+        i: 8.0,
+        iUnit: 1e-3, // mA
+        b: 0.75,
+        bUnit: 1, // T
+        w: 0.35,
+        wUnit: 1e-3 // mm
+      },
+      'n-gaas': {
+        name: 'GaAs 2DEG Probe',
+        vh: -82.4,
+        vhUnit: 1e-3, // mV
+        i: 2.5,
+        iUnit: 1e-3, // mA
+        b: 1.2,
+        bUnit: 1, // T
+        w: 0.1,
+        wUnit: 1e-3 // mm
+      },
+      'cu-film': {
+        name: 'Copper Thin Metal',
+        vh: -0.55,
+        vhUnit: 1e-6, // µV
+        i: 4.5,
+        iUnit: 1, // A
+        b: 1.0,
+        bUnit: 1, // T
+        w: 0.05,
+        wUnit: 1e-3 // mm
+      }
+    };
+
+    /**
+     * Web Audio API Synthesizer (Cyber Laboratory sound FX)
+     */
+    function playLabSound(type = 'beep') {
+      if (!LabSession.soundEnabled) return;
+      try {
+        if (!LabSession.audioCtx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) LabSession.audioCtx = new AudioContext();
+        }
+        if (!LabSession.audioCtx) return;
+        if (LabSession.audioCtx.state === 'suspended') {
+          LabSession.audioCtx.resume();
+        }
+
+        const ctx = LabSession.audioCtx;
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        if (type === 'beep') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(880, now);
+          osc.frequency.exponentialRampToValueAtTime(1320, now + 0.12);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+          osc.start(now);
+          osc.stop(now + 0.12);
+        } else if (type === 'success') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(523.25, now); // C5
+          osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+          osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+          osc.frequency.setValueAtTime(1046.50, now + 0.24); // C6
+          gain.gain.setValueAtTime(0.07, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+          osc.start(now);
+          osc.stop(now + 0.35);
+        } else if (type === 'scan') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.linearRampToValueAtTime(660, now + 0.25);
+          gain.gain.setValueAtTime(0.04, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        } else if (type === 'error') {
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(240, now);
+          osc.frequency.setValueAtTime(180, now + 0.1);
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+          osc.start(now);
+          osc.stop(now + 0.22);
+        }
+      } catch (e) {
+        // Audio might fail if user has not interacted yet, ignore silently
+      }
+    }
+
+    function toggleAudio() {
+      LabSession.soundEnabled = !LabSession.soundEnabled;
+      const icon = document.getElementById('soundIcon');
+      const label = document.getElementById('soundLabel');
+      if (LabSession.soundEnabled) {
+        icon.className = 'fa-solid fa-volume-high text-cyan-400';
+        label.innerText = 'AUDIO ON';
+        showToast('Audio FX Enabled', 'Cybernetic laboratory synthesis active', 'info');
+        playLabSound('beep');
+      } else {
+        icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+        label.innerText = 'MUTED';
+        showToast('Audio FX Muted', 'Sound cues suppressed', 'info');
+      }
+    }
+
+    /**
+     * Theme Toggle (Dark / Light)
+     */
+    function toggleTheme() {
+      const html = document.documentElement;
+      const isDark = html.classList.contains('dark');
+      const themeIcon = document.getElementById('themeIcon');
+      const themeLabel = document.getElementById('themeLabel');
+
+      if (isDark) {
+        html.classList.remove('dark');
+        html.classList.add('light');
+        themeIcon.className = 'fa-solid fa-sun text-amber-500';
+        themeLabel.innerText = 'LIGHT';
+        showToast('Visual Profile', 'Light academic mode loaded', 'info');
+      } else {
+        html.classList.remove('light');
+        html.classList.add('dark');
+        themeIcon.className = 'fa-solid fa-moon text-indigo-400';
+        themeLabel.innerText = 'DARK';
+        showToast('Visual Profile', 'Obsidian cyber-mode restored', 'info');
+      }
+      playLabSound('beep');
+    }
+
+    /**
+     * Toast Notification Engine (Non-intrusive cyber notifications)
+     */
+    function showToast(title, message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      
+      let borderCol = 'border-cyan-500/50';
+      let icon = 'fa-circle-info text-cyan-400';
+      let glow = 'shadow-cyan-500/20';
+
+      if (type === 'error') {
+        borderCol = 'border-rose-500/60';
+        icon = 'fa-triangle-exclamation text-rose-400';
+        glow = 'shadow-rose-500/20';
+        playLabSound('error');
+      } else if (type === 'success') {
+        borderCol = 'border-emerald-500/60';
+        icon = 'fa-circle-check text-emerald-400';
+        glow = 'shadow-emerald-500/20';
+      }
+
+      toast.className = `pointer-events-auto transform translate-y-3 opacity-0 transition-all duration-300 p-3.5 rounded-xl bg-slate-900/95 backdrop-blur-md border ${borderCol} shadow-lg ${glow} flex items-start gap-3 text-xs`;
+      toast.innerHTML = `
+        <i class="fa-solid ${icon} text-base mt-0.5"></i>
+        <div class="flex-1">
+          <div class="font-bold font-mono text-white tracking-wide">${title}</div>
+          <div class="text-slate-300 font-sans mt-0.5 leading-snug">${message}</div>
+        </div>
+        <button onclick="this.parentElement.remove()" class="text-slate-500 hover:text-white ml-1">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      `;
+
+      container.appendChild(toast);
+
+      // Trigger enter animation
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-3', 'opacity-0');
+      });
+
+      // Auto dismiss
+      setTimeout(() => {
+        toast.classList.add('translate-y-2', 'opacity-0');
+        setTimeout(() => toast.remove(), 300);
+      }, 4200);
+    }
+
+    /**
+     * Copy to Clipboard Engine
+     */
+    function copyToClipboard(elementIdOrText, label = 'Data') {
+      let textToCopy = '';
+      if (LabSession.currentResult && LabSession.currentResult[elementIdOrText]) {
+        textToCopy = LabSession.currentResult[elementIdOrText];
+      } else {
+        textToCopy = elementIdOrText;
+      }
+
+      if (!textToCopy) {
+        showToast('Empty Buffer', 'No valid data to copy', 'error');
+        return;
+      }
+
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        showToast('Copied to Clipboard', `${label}: ${textToCopy}`, 'success');
+        playLabSound('beep');
+      }).catch(err => {
+        showToast('Clipboard Notice', 'Please grant clipboard permissions', 'error');
+      });
+    }
+
+    /**
+     * Unit Conversion Normalization Previews
+     */
+    function updateNormPreview(param) {
+      if (param === 'voltage') {
+        const val = parseFloat(UI.voltageInput.value) || 0;
+        const unit = parseFloat(UI.voltageUnit.value);
+        const norm = val * unit;
+        UI.normVoltagePreview.innerText = `SI: ${formatScientific(norm, 3)} V`;
+      } else if (param === 'current') {
+        const val = parseFloat(UI.currentInput.value) || 0;
+        const unit = parseFloat(UI.currentUnit.value);
+        const norm = val * unit;
+        UI.normCurrentPreview.innerText = `SI: ${formatScientific(norm, 3)} A`;
+      } else if (param === 'magnetic') {
+        const val = parseFloat(UI.magneticInput.value) || 0;
+        const unit = parseFloat(UI.magneticUnit.value);
+        const norm = val * unit;
+        UI.normMagneticPreview.innerText = `SI: ${formatScientific(norm, 3)} T`;
+      } else if (param === 'thickness') {
+        const val = parseFloat(UI.thicknessInput.value) || 0;
+        const unit = parseFloat(UI.thicknessUnit.value);
+        const norm = val * unit;
+        UI.normThicknessPreview.innerText = `SI: ${formatScientific(norm, 3)} m`;
+      }
+    }
+
+    function updateAllNormPreviews() {
+      updateNormPreview('voltage');
+      updateNormPreview('current');
+      updateNormPreview('magnetic');
+      updateNormPreview('thickness');
+    }
+
+    /**
+     * Formatting Helpers
+     */
+    function formatScientific(val, decimals = 3) {
+      if (val === 0) return '0.000';
+      if (isNaN(val) || !isFinite(val)) return 'NaN';
+      const absVal = Math.abs(val);
+      if (absVal >= 0.01 && absVal < 1000) {
+        return val.toFixed(decimals);
+      }
+      return val.toExponential(decimals);
+    }
+
+    function formatScientificHTML(val, decimals = 3) {
+      if (val === 0) return '0.000';
+      if (isNaN(val) || !isFinite(val)) return 'Undefined';
+      
+      const expStr = val.toExponential(decimals);
+      const [coeff, exp] = expStr.split('e');
+      const expNum = parseInt(exp, 10);
+      
+      return `${coeff} &times; 10<sup>${expNum}</sup>`;
+    }
+
+    /**
+     * Reset Inputs
+     */
+    function resetInputs() {
+      UI.voltageInput.value = '';
+      UI.currentInput.value = '';
+      UI.magneticInput.value = '';
+      UI.thicknessInput.value = '';
+      updateAllNormPreviews();
+      showToast('Form Reset', 'All input fields cleared', 'info');
+      playLabSound('beep');
+    }
+
+    /**
+     * Load Preset Samples
+     */
+    function loadPreset(key) {
+      const preset = PRESETS[key];
+      if (!preset) return;
+
+      UI.voltageInput.value = preset.vh;
+      UI.voltageUnit.value = preset.vhUnit;
+
+      UI.currentInput.value = preset.i;
+      UI.currentUnit.value = preset.iUnit;
+
+      UI.magneticInput.value = preset.b;
+      UI.magneticUnit.value = preset.bUnit;
+
+      UI.thicknessInput.value = preset.w;
+      UI.thicknessUnit.value = preset.wUnit;
+
+      updateAllNormPreviews();
+      showToast('Preset Applied', `Loaded calibrated dataset for ${preset.name}`, 'success');
+      playLabSound('beep');
+
+      // Auto trigger analysis
+      performCalculation();
+    }
+
+    /**
+     * Theory Modal Controls
+     */
+    function openTheoryModal() {
+      const modal = document.getElementById('theoryModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      playLabSound('beep');
+    }
+
+    function closeTheoryModal() {
+      const modal = document.getElementById('theoryModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    /**
+     * Toggle Derivation Accordion
+     */
+    function toggleDerivation() {
+      const isHidden = UI.derivationContent.classList.contains('hidden');
+      if (isHidden) {
+        UI.derivationContent.classList.remove('hidden');
+        UI.derivationChevron.style.transform = 'rotate(180deg)';
+      } else {
+        UI.derivationContent.classList.add('hidden');
+        UI.derivationChevron.style.transform = 'rotate(0deg)';
+      }
+      playLabSound('beep');
+    }
+
+    /**
+     * CORE CALCULATION & DATA PROCESSING ENGINE
+     */
+    function performCalculation() {
+      // 1. Extract raw inputs
+      const vhRaw = parseFloat(UI.voltageInput.value);
+      const vhUnit = parseFloat(UI.voltageUnit.value);
+
+      const iRaw = parseFloat(UI.currentInput.value);
+      const iUnit = parseFloat(UI.currentUnit.value);
+
+      const bRaw = parseFloat(UI.magneticInput.value);
+      const bUnit = parseFloat(UI.magneticUnit.value);
+
+      const wRaw = parseFloat(UI.thicknessInput.value);
+      const wUnit = parseFloat(UI.thicknessUnit.value);
+
+      // 2. Comprehensive Validation Guards
+      if (isNaN(vhRaw)) {
+        showToast('Input Error', 'Please supply a numeric Hall Voltage (VH)', 'error');
+        UI.voltageInput.focus();
+        return;
+      }
+      if (isNaN(iRaw)) {
+        showToast('Input Error', 'Please supply a numeric Current (I)', 'error');
+        UI.currentInput.focus();
+        return;
+      }
+      if (isNaN(bRaw)) {
+        showToast('Input Error', 'Please supply a numeric Magnetic Field (B)', 'error');
+        UI.magneticInput.focus();
+        return;
+      }
+      if (isNaN(wRaw)) {
+        showToast('Input Error', 'Please supply a numeric Thickness (w)', 'error');
+        UI.thicknessInput.focus();
+        return;
+      }
+
+      // Normalization to Base SI Units
+      const vh_SI = vhRaw * vhUnit;
+      const i_SI = iRaw * iUnit;
+      const b_SI = bRaw * bUnit;
+      const w_SI = wRaw * wUnit;
+
+      // Division by Zero Guards
+      if (Math.abs(i_SI) <= 1e-18) {
+        showToast('Singularity Error (Division by Zero)', 'Current (I) cannot be zero. Hall effect requires active charge flow.', 'error');
+        return;
+      }
+      if (Math.abs(b_SI) <= 1e-18) {
+        showToast('Singularity Error (Division by Zero)', 'Magnetic Field (B) cannot be zero. Transverse Lorentz deflection requires magnetic flux.', 'error');
+        return;
+      }
+      if (w_SI <= 0) {
+        showToast('Geometry Error', 'Sample thickness (w) must be strictly greater than 0.', 'error');
+        return;
+      }
+
+      // 3. Initiate Scanner Micro-Animation
+      triggerScanAnimation(() => {
+        // Step 1: Hall Coefficient: R_H = (V_H * w) / (I * B)
+        const rh_SI = (vh_SI * w_SI) / (i_SI * b_SI); // m^3 / C
+        const rh_CGS = rh_SI * 1e6; // cm^3 / C
+
+        // Step 2: Carrier Concentration: n = 1 / (|R_H| * e)
+        let carrierDensity_SI = 0;
+        let carrierDensity_CGS = 0;
+
+        const absRH = Math.abs(rh_SI);
+        if (absRH > 1e-25) {
+          carrierDensity_SI = 1 / (absRH * ELEMENTARY_CHARGE); // m^-3
+          carrierDensity_CGS = carrierDensity_SI * 1e-6; // cm^-3
+        }
+
+        // Decision Tree & Classification
+        let materialType = 'INTRINSIC / NEUTRAL';
+        let majorityCarrier = 'None (Balanced or Zero Transverse Potential)';
+        let badgeClass = 'text-amber-400 bg-amber-500/10 border-amber-500/30';
+        let iconClass = 'fa-solid fa-scale-balanced';
+        let iconBg = 'bg-amber-500/20 text-amber-400 border border-amber-500/40';
+        let borderGlow = 'border-amber-500/50 shadow-amber-500/20';
+
+        if (rh_SI < -1e-20) {
+          // N-Type Semiconductor
+          materialType = 'N-TYPE SEMICONDUCTOR';
+          majorityCarrier = 'Electrons (e⁻)';
+          badgeClass = 'text-cyan-400 bg-cyan-500/10 border-cyan-500/40 animate-glow-cyan';
+          iconClass = 'fa-solid fa-atom';
+          iconBg = 'bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-cyan-500/30';
+          borderGlow = 'border-cyan-500/50 shadow-cyan-500/20';
+        } else if (rh_SI > 1e-20) {
+          // P-Type Semiconductor
+          materialType = 'P-TYPE SEMICONDUCTOR';
+          majorityCarrier = 'Holes (h⁺)';
+          badgeClass = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/40 animate-glow-emerald';
+          iconClass = 'fa-solid fa-plus';
+          iconBg = 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-emerald-500/30';
+          borderGlow = 'border-emerald-500/50 shadow-emerald-500/20';
+        }
+
+        // Store result in isolated local memory
+        LabSession.currentResult = {
+          vh_SI: vh_SI,
+          i_SI: i_SI,
+          b_SI: b_SI,
+          w_SI: w_SI,
+          rh_SI: rh_SI,
+          rh_CGS: rh_CGS,
+          rhValueSI: rh_SI.toExponential(4) + ' m^3/C',
+          density_SI: carrierDensity_SI,
+          density_CGS: carrierDensity_CGS,
+          densityValueSI: carrierDensity_SI.toExponential(4) + ' m^-3',
+          densityValueCGS: carrierDensity_CGS.toExponential(4) + ' cm^-3',
+          materialType: materialType,
+          majorityCarrier: majorityCarrier,
+          timestamp: new Date().toLocaleTimeString()
+        };
+
+        // Render UI with smooth transitions
+        renderResultsUI(LabSession.currentResult, {
+          badgeClass, iconClass, iconBg, borderGlow
+        });
+
+        // Add to history table
+        addToHistoryLog(LabSession.currentResult);
+
+        // Update 2.5D Canvas state
+        updateCanvasPhysics(rh_SI);
+
+        playLabSound('success');
+        showToast('Classification Complete', `Characterized as ${materialType}`, 'success');
+      });
+    }
+
+    /**
+     * Laser Scanning Micro-interaction
+     */
+    function triggerScanAnimation(callback) {
+      if (LabSession.isScanning) return;
+      LabSession.isScanning = true;
+
+      UI.inputContainer.classList.add('scanning');
+      UI.calculateBtn.disabled = true;
+      UI.btnText.innerText = 'QUANTUM PROCESSING...';
+      playLabSound('scan');
+
+      setTimeout(() => {
+        UI.inputContainer.classList.remove('scanning');
+        UI.calculateBtn.disabled = false;
+        UI.btnText.innerText = 'EXECUTE HALL ANALYSIS';
+        LabSession.isScanning = false;
+        callback();
+      }, 550);
+    }
+
+    /**
+     * Render Results View
+     */
+    function renderResultsUI(res, styling) {
+      // 1. Classification Banner
+      UI.classificationBanner.className = `flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-xl border transition-all duration-300 ${styling.borderGlow} ${styling.badgeClass}`;
+      UI.materialTypeTitle.innerText = res.materialType;
+      UI.majorityCarrierText.innerText = res.majorityCarrier;
+      UI.carrierIconBox.className = `w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold shadow-lg transition-all duration-300 ${styling.iconBg}`;
+      UI.carrierTypeIcon.className = styling.iconClass;
+
+      // 2. Metric 1: Hall Coefficient
+      UI.rhDisplay.innerHTML = formatScientificHTML(res.rh_SI, 4) + ' <span class="text-xs font-normal text-slate-400">m³/C</span>';
+      UI.rhAltDisplay.innerHTML = `CGS: <b class="text-cyan-300">${formatScientificHTML(res.rh_CGS, 3)}</b> cm³/C`;
+      
+      if (res.rh_SI < 0) {
+        UI.rhSignExplanation.innerHTML = '<i class="fa-solid fa-arrow-down text-cyan-400 mr-1"></i> Negative R<sub>H</sub> confirmed: Electron-dominated transport';
+      } else if (res.rh_SI > 0) {
+        UI.rhSignExplanation.innerHTML = '<i class="fa-solid fa-arrow-up text-emerald-400 mr-1"></i> Positive R<sub>H</sub> confirmed: Hole-dominated transport';
+      } else {
+        UI.rhSignExplanation.innerHTML = 'Zero transverse deflection detected';
+      }
+
+      // 3. Metric 2: Carrier Density
+      if (res.density_SI > 0) {
+        UI.densityDisplay.innerHTML = formatScientificHTML(res.density_SI, 4) + ' <span class="text-xs font-normal text-slate-400">m⁻³</span>';
+        UI.densityCGSDisplay.innerHTML = `Standard: <b class="text-emerald-300">${formatScientificHTML(res.density_CGS, 4)}</b> cm⁻³`;
+      } else {
+        UI.densityDisplay.innerText = 'Undefined';
+        UI.densityCGSDisplay.innerText = 'Standard: Undefined';
+      }
+
+      // 4. Mathematical Audit Trail Details
+      UI.auditVH.innerText = `${res.vh_SI.toExponential(4)} V`;
+      UI.auditI.innerText = `${res.i_SI.toExponential(4)} A`;
+      UI.auditB.innerText = `${res.b_SI.toExponential(4)} T`;
+      UI.auditW.innerText = `${res.w_SI.toExponential(4)} m`;
+
+      UI.auditFormula1.innerHTML = `
+        R<sub>H</sub> = (${res.vh_SI.toExponential(3)} V &times; ${res.w_SI.toExponential(3)} m) / (${res.i_SI.toExponential(3)} A &times; ${res.b_SI.toExponential(3)} T)
+        <br>&rarr; <span class="text-cyan-300 font-bold">${res.rh_SI.toExponential(4)} m³/C</span> (${res.rh_CGS.toExponential(4)} cm³/C)
+      `;
+
+      if (res.density_SI > 0) {
+        UI.auditFormula2.innerHTML = `
+          n = 1 / (|${res.rh_SI.toExponential(3)}| &times; 1.602176634 &times; 10⁻¹⁹ C)
+          <br>&rarr; <span class="text-emerald-300 font-bold">${res.density_SI.toExponential(4)} m⁻³</span> (${res.density_CGS.toExponential(4)} cm⁻³)
+        `;
+      } else {
+        UI.auditFormula2.innerHTML = `n = 1 / (0 &times; e) &rarr; Singularity (Infinite / Undefined density)`;
+      }
+
+      if (res.rh_SI < 0) {
+        UI.auditRuleExplanation.innerHTML = `
+          <b class="text-cyan-300">Decision Rule [R<sub>H</sub> &lt; 0]:</b> Hall voltage sign is negative relative to the reference polarity, proving deflection of negative mobile charges (electrons). Classified as <b class="text-cyan-400">N-Type Semiconductor</b>.
+        `;
+      } else if (res.rh_SI > 0) {
+        UI.auditRuleExplanation.innerHTML = `
+          <b class="text-emerald-300">Decision Rule [R<sub>H</sub> &gt; 0]:</b> Hall voltage sign is positive relative to the reference polarity, proving deflection of positive mobile quasi-particles (valence band holes). Classified as <b class="text-emerald-400">P-Type Semiconductor</b>.
+        `;
+      } else {
+        UI.auditRuleExplanation.innerHTML = `
+          <b class="text-amber-300">Decision Rule [R<sub>H</sub> == 0]:</b> Zero Hall voltage detected. Sample is intrinsic or exhibits equal electron and hole mobilities cancelling transverse field.
+        `;
+      }
+
+      // Auto-open derivation drawer if previously requested
+      // UI.derivationContent.classList.remove('hidden');
+    }
+
+    /**
+     * History Log Operations
+     */
+    function addToHistoryLog(res) {
+      LabSession.history.unshift(res);
+      if (LabSession.history.length > 25) LabSession.history.pop();
+
+      renderHistoryTable();
+    }
+
+    function renderHistoryTable() {
+      if (LabSession.history.length === 0) {
+        UI.historyTableBody.innerHTML = `
+          <tr class="text-slate-400 text-center py-4">
+            <td colspan="8" class="py-4">No experiment runs recorded yet. Execute a calculation to log telemetry.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      let html = '';
+      LabSession.history.forEach((item, index) => {
+        const typeBadge = item.rh_SI < 0 
+          ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/40">N-Type</span>'
+          : (item.rh_SI > 0 
+            ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">P-Type</span>'
+            : '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40">Intrinsic</span>');
+
+        html += `
+          <tr class="hover:bg-slate-800/40 transition-colors">
+            <td class="py-2 px-3 text-slate-400">${item.timestamp}</td>
+            <td class="py-2 px-3 font-mono">${item.vh_SI.toExponential(2)} V</td>
+            <td class="py-2 px-3 font-mono">${item.i_SI.toExponential(2)} A</td>
+            <td class="py-2 px-3 font-mono">${item.b_SI.toExponential(2)} T</td>
+            <td class="py-2 px-3 font-mono">${item.w_SI.toExponential(2)} m</td>
+            <td class="py-2 px-3">${typeBadge}</td>
+            <td class="py-2 px-3 font-mono text-cyan-300">${item.rh_SI.toExponential(3)}</td>
+            <td class="py-2 px-3 font-mono text-emerald-300">${item.density_CGS.toExponential(3)}</td>
+          </tr>
+        `;
+      });
+      UI.historyTableBody.innerHTML = html;
+    }
+
+    function clearHistoryLog() {
+      LabSession.history = [];
+      renderHistoryTable();
+      showToast('Log Cleared', 'Experimental telemetry history purged', 'info');
+      playLabSound('beep');
+    }
+
+    function downloadCSVLog() {
+      if (LabSession.history.length === 0) {
+        showToast('Empty Log', 'No recorded runs to export as CSV', 'error');
+        return;
+      }
+
+      let csv = 'Timestamp,VH_SI_Volts,I_SI_Amperes,B_SI_Tesla,Thickness_SI_Meters,Material_Type,Majority_Carrier,RH_SI_m3_per_C,RH_CGS_cm3_per_C,Carrier_Density_m3,Carrier_Density_cm3\n';
+      
+      LabSession.history.forEach(r => {
+        csv += `"${r.timestamp}",${r.vh_SI},${r.i_SI},${r.b_SI},${r.w_SI},"${r.materialType}","${r.majorityCarrier}",${r.rh_SI},${r.rh_CGS},${r.density_SI},${r.density_CGS}\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `hall_effect_telemetry_${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      showToast('Export Success', 'Telemetry downloaded as CSV', 'success');
+      playLabSound('beep');
+    }
+
+    /**
+     * Lab Report Export Generator (Markdown / LaTeX)
+     */
+    function exportLabReport(format = 'markdown') {
+      if (!LabSession.currentResult) {
+        showToast('No Data', 'Please execute an analysis before exporting a report.', 'error');
+        return;
+      }
+
+      const res = LabSession.currentResult;
+      let text = '';
+
+      if (format === 'markdown') {
+        text = `### Hall Effect Characterization Lab Report
+**Session ID:** ${LabSession.id}  
+**Timestamp:** ${res.timestamp}  
+**Classification Verdict:** ${res.materialType}  
+**Majority Charge Carriers:** ${res.majorityCarrier}  
+
+#### 1. Experimental Normalized Parameters (SI):
+- Hall Voltage ($V_H$): ${res.vh_SI.toExponential(4)} V
+- Longitudinal Current ($I$): ${res.i_SI.toExponential(4)} A
+- Perpendicular Magnetic Flux ($B$): ${res.b_SI.toExponential(4)} T
+- Sample Thickness ($w$): ${res.w_SI.toExponential(4)} m
+
+#### 2. Calculated Electrophysical Constants:
+- **Hall Coefficient ($R_H$):** ${res.rh_SI.toExponential(4)} m³/C (${res.rh_CGS.toExponential(4)} cm³/C)
+- **Carrier Concentration ($n$):** ${res.density_SI.toExponential(4)} m⁻³ (${res.density_CGS.toExponential(4)} cm⁻³)
+
+#### 3. Derivation Summary:
+$$R_H = \\frac{V_H \\cdot w}{I \\cdot B} = \\frac{(${res.vh_SI.toExponential(3)})( ${res.w_SI.toExponential(3)})}{(${res.i_SI.toExponential(3)})( ${res.b_SI.toExponential(3)})} = ${res.rh_SI.toExponential(4)} \\text{ m}^3/\\text{C}$$
+$$n = \\frac{1}{|R_H| \\cdot e} = \\frac{1}{|${res.rh_SI.toExponential(4)}| \\cdot 1.602176634 \\times 10^{-19}} = ${res.density_SI.toExponential(4)} \\text{ m}^{-3}$$
+`;
+      } else if (format === 'latex') {
+        text = `% Hall Effect Lab Results generated by Quantum Lab Suite
+\\begin{table}[h!]
+\\centering
+\\begin{tabular}{|l|l|}
+\\hline
+\\textbf{Parameter} & \\textbf{Value (SI)} \\\\ \\hline
+Hall Voltage ($V_H$) & $${res.vh_SI.toExponential(4)}\\text{ V}$ \\\\ \\hline
+Current ($I$) & $${res.i_SI.toExponential(4)}\\text{ A}$ \\\\ \\hline
+Magnetic Field ($B$) & $${res.b_SI.toExponential(4)}\\text{ T}$ \\\\ \\hline
+Thickness ($w$) & $${res.w_SI.toExponential(4)}\\text{ m}$ \\\\ \\hline
+\\textbf{Hall Coefficient ($R_H$)} & $\\mathbf{${res.rh_SI.toExponential(4)}\\text{ m}^3/\\text{C}}$ \\\\ \\hline
+\\textbf{Carrier Density ($n$)} & $\\mathbf{${res.density_SI.toExponential(4)}\\text{ m}^{-3}}$ \\\\ \\hline
+\\textbf{Material Classification} & \\textbf{${res.materialType}} \\\\ \\hline
+\\end{tabular}
+\\caption{Experimental Hall effect measurements for sample #${LabSession.id}.}
+\\label{tab:hall_results}
+\\end{table}`;
+      }
+
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('Lab Report Copied', `${format.toUpperCase()} report copied to clipboard! Ready to paste into document.`, 'success');
+        playLabSound('beep');
+      }).catch(err => {
+        showToast('Clipboard Error', 'Could not copy to clipboard', 'error');
+      });
+    }
+
+    /**
+     * 2.5D INTERACTIVE CANVAS HALL BAR VISUALIZER
+     */
+    const CanvasState = {
+      carrierType: 'electrons', // 'electrons' or 'holes'
+      particles: [],
+      numParticles: 42,
+      rhValue: -1,
+      angle: 0.35,
+      tilt: 0.25
+    };
+
+    function initCanvas() {
+      const canvas = UI.hallCanvas;
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+
+      // Seed particles
+      CanvasState.particles = [];
+      for (let i = 0; i < CanvasState.numParticles; i++) {
+        CanvasState.particles.push({
+          x: Math.random(),
+          y: Math.random(),
+          z: Math.random(),
+          speed: 0.004 + Math.random() * 0.005,
+          offsetDeflect: (Math.random() - 0.5) * 0.1
+        });
+      }
+
+      startCanvasAnimation();
+    }
+
+    function updateCanvasPhysics(rh) {
+      CanvasState.rhValue = rh;
+      if (rh < 0) {
+        CanvasState.carrierType = 'electrons';
+        UI.canvasCarrierBadge.innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-cyan-400 mr-1.5 animate-pulse"></span>CARRIER: ELECTRONS (e⁻) [N-TYPE]';
+        UI.canvasCarrierBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/40';
+      } else if (rh > 0) {
+        CanvasState.carrierType = 'holes';
+        UI.canvasCarrierBadge.innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span>CARRIER: HOLES (h⁺) [P-TYPE]';
+        UI.canvasCarrierBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/40';
+      } else {
+        CanvasState.carrierType = 'neutral';
+        UI.canvasCarrierBadge.innerHTML = 'CARRIER: BALANCED';
+      }
+    }
+
+    function toggleCanvasMotion() {
+      LabSession.isCanvasPaused = !LabSession.isCanvasPaused;
+      UI.pauseCanvasBtn.innerHTML = LabSession.isCanvasPaused 
+        ? '<i class="fa-solid fa-play"></i>' 
+        : '<i class="fa-solid fa-pause"></i>';
+    }
+
+    function renderCanvasFrame() {
+      const canvas = UI.hallCanvas;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Coordinate transformation for 2.5D Hall Slab
+      const centerX = w * 0.5;
+      const centerY = h * 0.52;
+      const slabL = w * 0.52; // length along x
+      const slabW = h * 0.40; // width along y (transverse)
+      const slabH = h * 0.18; // thickness along z
+
+      // Iso Projection helper
+      function project(px, py, pz) {
+        // px: -0.5 to 0.5 (current direction)
+        // py: -0.5 to 0.5 (Hall transverse direction)
+        // pz: -0.5 to 0.5 (thickness / B field direction)
+        const cosA = Math.cos(CanvasState.angle);
+        const sinA = Math.sin(CanvasState.angle);
+        const tilt = CanvasState.tilt;
+
+        const rx = px * slabL;
+        const ry = py * slabW;
+        const rz = pz * slabH;
+
+        const screenX = centerX + (rx * cosA - ry * sinA);
+        const screenY = centerY + (rx * sinA + ry * cosA) * tilt - rz;
+        return { x: screenX, y: screenY };
+      }
+
+      // Draw 3D Translucent Semiconductor Bar (Faces)
+      // Top face
+      ctx.beginPath();
+      const p1 = project(-0.5, -0.5, 0.5);
+      const p2 = project(0.5, -0.5, 0.5);
+      const p3 = project(0.5, 0.5, 0.5);
+      const p4 = project(-0.5, 0.5, 0.5);
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.lineTo(p3.x, p3.y);
+      ctx.lineTo(p4.x, p4.y);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(30, 41, 59, 0.65)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(100, 116, 139, 0.4)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Front Face
+      ctx.beginPath();
+      const p4b = project(-0.5, 0.5, -0.5);
+      const p3b = project(0.5, 0.5, -0.5);
+      ctx.moveTo(p4.x, p4.y);
+      ctx.lineTo(p3.x, p3.y);
+      ctx.lineTo(p3b.x, p3b.y);
+      ctx.lineTo(p4b.x, p4b.y);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fill();
+      ctx.stroke();
+
+      // Right Face (Current exit face)
+      ctx.beginPath();
+      const p2b = project(0.5, -0.5, -0.5);
+      ctx.moveTo(p2.x, p2.y);
+      ctx.lineTo(p3.x, p3.y);
+      ctx.lineTo(p3b.x, p3b.y);
+      ctx.lineTo(p2b.x, p2b.y);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(20, 30, 50, 0.75)';
+      ctx.fill();
+      ctx.stroke();
+
+      // Magnetic field flux lines (vertical downward arrows)
+      ctx.strokeStyle = 'rgba(16, 185, 129, 0.45)';
+      ctx.fillStyle = 'rgba(16, 185, 129, 0.8)';
+      ctx.lineWidth = 1.5;
+      const bLocations = [-0.3, 0.0, 0.3];
+      bLocations.forEach(bx => {
+        const top = project(bx, 0, 1.3);
+        const bot = project(bx, 0, 0.55);
+        ctx.beginPath();
+        ctx.moveTo(top.x, top.y);
+        ctx.lineTo(bot.x, bot.y);
+        ctx.stroke();
+
+        // Arrow head
+        ctx.beginPath();
+        ctx.moveTo(bot.x, bot.y);
+        ctx.lineTo(bot.x - 3, bot.y - 6);
+        ctx.lineTo(bot.x + 3, bot.y - 6);
+        ctx.closePath();
+        ctx.fill();
+      });
+
+      // Transverse charge accumulation faces (Electrons vs Holes)
+      const isElectrons = (CanvasState.carrierType === 'electrons');
+      const isHoles = (CanvasState.carrierType === 'holes');
+
+      // Draw Charges Accumulating on Transverse Faces
+      const numCharges = 6;
+      for (let i = 0; i < numCharges; i++) {
+        const frac = -0.4 + (i / (numCharges - 1)) * 0.8;
+        
+        // Front face accumulation (py = 0.5)
+        const frontPos = project(frac, 0.48, 0.0);
+        ctx.beginPath();
+        ctx.arc(frontPos.x, frontPos.y, 4, 0, Math.PI * 2);
+        if (isElectrons) {
+          ctx.fillStyle = '#22d3ee'; // Cyan e-
+          ctx.shadowColor = '#06b6d4';
+          ctx.shadowBlur = 8;
+        } else if (isHoles) {
+          ctx.fillStyle = '#34d399'; // Emerald h+
+          ctx.shadowColor = '#10b981';
+          ctx.shadowBlur = 8;
+        } else {
+          ctx.fillStyle = '#94a3b8';
+          ctx.shadowBlur = 0;
+        }
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // Back face opposing charge accumulation (py = -0.5)
+        const backPos = project(frac, -0.48, 0.0);
+        ctx.beginPath();
+        ctx.arc(backPos.x, backPos.y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = isElectrons ? '#f43f5e' : (isHoles ? '#06b6d4' : '#64748b');
+        ctx.fill();
+      }
+
+      // Draw and animate drifting particles through the crystal slab
+      if (!LabSession.isCanvasPaused) {
+        CanvasState.particles.forEach(p => {
+          // Drift velocity along x
+          p.x += p.speed;
+          if (p.x > 0.5) p.x = -0.5;
+
+          // Lorentz deflection toward front face (py = 0.5)
+          const targetY = isElectrons ? 0.35 : (isHoles ? 0.35 : 0.0);
+          p.y += (targetY - p.y) * 0.02 + p.offsetDeflect * 0.01;
+          if (p.y > 0.48) p.y = 0.48;
+          if (p.y < -0.48) p.y = -0.48;
+        });
+      }
+
+      // Render drifting particles
+      CanvasState.particles.forEach(p => {
+        const pt = project(p.x, p.y, (p.z - 0.5) * 0.8);
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 2.5, 0, Math.PI * 2);
+        if (isElectrons) {
+          ctx.fillStyle = 'rgba(34, 211, 238, 0.85)';
+        } else if (isHoles) {
+          ctx.fillStyle = 'rgba(52, 211, 153, 0.85)';
+        } else {
+          ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+        }
+        ctx.fill();
+      });
+
+      // Draw Voltmeter Probes on Sides
+      const vTop = project(0.0, -0.5, 0.0);
+      const vBot = project(0.0, 0.5, 0.0);
+      
+      ctx.strokeStyle = '#06b6d4';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(vTop.x, vTop.y);
+      ctx.lineTo(vTop.x, vTop.y - 20);
+      ctx.lineTo(vBot.x, vBot.y + 20);
+      ctx.lineTo(vBot.x, vBot.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Voltmeter Indicator Node
+      const meterX = vBot.x + 18;
+      const meterY = (vTop.y + vBot.y) / 2;
+      ctx.beginPath();
+      ctx.arc(meterX, meterY, 14, 0, Math.PI * 2);
+      ctx.fillStyle = '#0f172a';
+      ctx.fill();
+      ctx.strokeStyle = '#22d3ee';
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '9px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('VH', meterX, meterY);
+
+      CanvasState.canvasAnimId = requestAnimationFrame(renderCanvasFrame);
+    }
+
+    function startCanvasAnimation() {
+      if (CanvasState.canvasAnimId) cancelAnimationFrame(CanvasState.canvasAnimId);
+      CanvasState.canvasAnimId = requestAnimationFrame(renderCanvasFrame);
+    }
+
+    // Resize listener for Canvas
+    window.addEventListener('resize', () => {
+      const canvas = UI.hallCanvas;
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+    });
+
+    /**
+     * Initialization Lifecycle
+     */
+    document.addEventListener('DOMContentLoaded', () => {
+      // Set unique simulated session ID
+      UI.sessionId.innerText = LabSession.id;
+      
+      // Initialize normalizer previews
+      updateAllNormPreviews();
+
+      // Initialize 2.5D Canvas
+      initCanvas();
+
+      // Trigger default calculation with preset (n-Germanium)
+      performCalculation();
+    });
+  </script>
+</body>
+</html>
